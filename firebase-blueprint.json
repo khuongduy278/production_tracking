@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role assignment.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "plan", "manager", "foreman"]
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["fullName", "role", "createdAt", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Production and delivery order.",
+      "type": "object",
+      "properties": {
+        "contractCode": { "type": "string" },
+        "materialCode": { "type": "string" },
+        "deliveryDate": { "type": "string" },
+        "plannedQuantity": { "type": "integer" },
+        "actualQuantity": { "type": "integer" },
+        "cutAllowed": { "type": "integer" },
+        "cutVertical": { "type": "integer" },
+        "sewBorder": { "type": "integer" },
+        "sewHorizontal": { "type": "integer" },
+        "inspect": { "type": "integer" },
+        "pack": { "type": "integer" },
+        "delayReason": { "type": "string" },
+        "notes": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": [
+        "contractCode",
+        "materialCode",
+        "deliveryDate",
+        "plannedQuantity",
+        "actualQuantity",
+        "cutAllowed",
+        "cutVertical",
+        "sewBorder",
+        "sewHorizontal",
+        "inspect",
+        "pack",
+        "updatedBy",
+        "updatedAt",
+        "createdAt"
+      ]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "Audit log for order changes.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["orderId", "action", "details", "userId", "userName", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and roles."
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Production orders."
+    },
+    "logs/{logId}": {
+      "schema": { "$ref": "#/entities/Log" },
+      "description": "System audit logs."
+    }
+  }
+}

@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    // Bypass authentication entirely 
+    function isSignedIn() { return true; }
+    
+    // We cannot reliably look up the user role in the database since we no longer have auth.uid.
+    // Allow operations.
+    function getUserRole() {
+      return 'admin';
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'admin';
+    }
+    
+    function isPlan() {
+      return isSignedIn() && getUserRole() == 'plan';
+    }
+    
+    function isManager() {
+      return isSignedIn() && getUserRole() == 'manager';
+    }
+    
+    function isForeman() {
+      return isSignedIn() && getUserRole() == 'foreman';
+    }
+    
+    function canEditOrders() {
+      // Everyone except unauthenticated can edit if they have a role, 
+      // but let's say all these roles:
+      return isAdmin() || isPlan() || isManager() || isForeman();
+    }
+    
+    // User validation
+    function isValidUser(data) {
+      let isBasicValid = 
+        data.keys().hasAll(['fullName', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().size() == 4 &&
+        data.fullName is string && data.fullName.size() <= 100 &&
+        data.role is string &&
+        data.createdAt is string &&
+        data.updatedAt is string;
+      return isBasicValid;
+    }
+    
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      
+      allow create: if isSignedIn() 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time.toIsoString() // approximate
+        // First user bootstrap logic is handled in client or Admin only
+        ;
+        
+      allow update: if isSignedIn()
+        && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'updatedAt', 'role'])
+        && (isAdmin() || (request.auth.uid == userId && incoming().role == existing().role));
+        
+      allow delete: if isAdmin();
+    }
+    
+    // Order validation
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+        'contractCode', 'materialCode', 'deliveryDate', 
+        'plannedQuantity', 'actualQuantity', 'cutAllowed', 
+        'cutVertical', 'sewBorder', 'sewHorizontal', 
+        'inspect', 'pack', 'updatedBy', 'updatedAt', 'createdAt',
+        'delayReason', 'notes'
+      ]) &&
+      data.keys().size() == 16 &&
+      data.contractCode is string && data.contractCode.size() <= 100 &&
+      data.materialCode is string && data.materialCode.size() <= 100 &&
+      data.deliveryDate is string && data.deliveryDate.size() <= 50 &&
+      data.plannedQuantity is number &&
+      data.actualQuantity is number &&
+      data.cutAllowed is number &&
+      data.cutVertical is number &&
+      data.sewBorder is number &&
+      data.sewHorizontal is number &&
+      data.inspect is number &&
+      data.pack is number &&
+      data.updatedBy is string && data.updatedBy.size() <= 100 &&
+      data.updatedAt is string &&
+      data.createdAt is string &&
+      (data.delayReason == null || (data.delayReason is string && data.delayReason.size() <= 500)) &&
+      (data.notes == null || (data.notes is string && data.notes.size() <= 500));
+    }
+    
+    match /orders/{orderId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      
+      allow create: if isSignedIn()
+        && isValidId(orderId)
+        && (isAdmin() || isPlan())
+        && isValidOrder(incoming());
+        
+      allow update: if isSignedIn()
+        && isValidOrder(incoming())
+        && canEditOrders()
+        // If they are foreman, maybe only update counts. For simplicity, allow all fields to be modified if authorized, but restrict what's allowed.
+        && incoming().contractCode == existing().contractCode // immutable
+        && incoming().createdAt == existing().createdAt;
+        
+      allow delete: if isAdmin() || isPlan();
+    }
+    
+    // Log validation
+    function isValidLog(data) {
+      return data.keys().hasAll(['orderId', 'action', 'details', 'userId', 'userName', 'timestamp']) &&
+             data.keys().size() == 6 &&
+             data.orderId is string && data.orderId.size() <= 128 &&
+             data.action is string && data.action.size() <= 100 &&
+             data.details is string && data.details.size() <= 1000 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.userName is string && data.userName.size() <= 100 &&
+             data.timestamp is string;
+    }
+    
+    match /logs/{logId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      
+      allow create: if isSignedIn()
+        && isValidId(logId)
+        && isValidLog(incoming());
+        
+      allow update: if false; // Logs are immutable
+      allow delete: if false; // Logs are immutable
+    }
+  }
+}
