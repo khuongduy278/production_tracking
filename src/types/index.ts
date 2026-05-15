@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'plan' | 'manager' | 'foreman' | 'tech' | 'head_production';
+export type Role = 'admin' | 'plan' | 'manager' | 'foreman' | 'tech' | 'head_production' | 'deputy_manager';
 
 export interface User {
   id: string; // from auth

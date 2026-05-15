@@ -64,6 +64,7 @@ export default function WelcomePage() {
                 <option value="admin">Admin (Quản trị viên)</option>
                 <option value="plan">Điều độ Sản xuất</option>
                 <option value="manager">Quản đốc</option>
+                <option value="deputy_manager">Phó Quản đốc</option>
                 <option value="head_production">Trưởng ngành Sản xuất</option>
                 <option value="tech">Nhân viên Kỹ thuật</option>
                 <option value="foreman">Tổ trưởng</option>

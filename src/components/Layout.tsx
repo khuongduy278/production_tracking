@@ -124,6 +124,7 @@ export default function Layout() {
                   {userData?.role === 'plan' ? 'Điều độ Sản xuất' :
                    userData?.role === 'head_production' ? 'Trưởng ngành SX' :
                    userData?.role === 'tech' ? 'Nhân viên Kỹ thuật' :
+                   userData?.role === 'deputy_manager' ? 'Phó Quản đốc' :
                    userData?.role}
                 </p>
               </div>
