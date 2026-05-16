@@ -81,12 +81,15 @@ service cloud.firestore {
         'plannedQuantity', 'actualQuantity', 'cutAllowed', 
         'cutVertical', 'sewBorder', 'sewHorizontal', 
         'inspect', 'pack', 'updatedBy', 'updatedAt', 'createdAt',
-        'delayReason', 'notes'
+        'delayReason', 'notes', 'type', 'outsourcingDeliveryDate', 'outsourcingReceiveDate'
       ]) &&
-      data.keys().size() == 16 &&
+      data.keys().size() == 19 &&
       data.contractCode is string && data.contractCode.size() <= 100 &&
       data.materialCode is string && data.materialCode.size() <= 100 &&
       data.deliveryDate is string && data.deliveryDate.size() <= 50 &&
+      (data.type is string && data.type.size() <= 20) &&
+      (data.outsourcingDeliveryDate == null || (data.outsourcingDeliveryDate is string && data.outsourcingDeliveryDate.size() <= 50)) &&
+      (data.outsourcingReceiveDate == null || (data.outsourcingReceiveDate is string && data.outsourcingReceiveDate.size() <= 50)) &&
       data.plannedQuantity is number &&
       data.actualQuantity is number &&
       data.cutAllowed is number &&

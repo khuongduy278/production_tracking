@@ -34,7 +34,8 @@ export default function Layout() {
 
   const navItems = [
     { name: 'Tổng quan', path: '/', icon: LayoutDashboard },
-    { name: 'Đơn hàng', path: '/orders', icon: ListTodo },
+    { name: 'Tiến độ', path: '/orders', icon: ListTodo },
+    { name: 'Gia công', path: '/outsourcing', icon: ListTodo },
     { name: 'Lịch sử', path: '/logs', icon: FileDown },
   ];
 

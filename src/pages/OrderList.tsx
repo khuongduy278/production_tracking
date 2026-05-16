@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { differenceInDays, startOfDay, parseISO, isSameDay, addDays } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
-export default function OrderList() {
+export default function OrderList({ listType = 'regular' }: { listType?: 'regular' | 'outsourcing' }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -53,6 +53,10 @@ export default function OrderList() {
   };
 
   const filteredOrders = orders.filter(o => {
+    // Basic type check (default type is 'regular' or undefined for older records)
+    const orderType = o.type === 'outsourcing' ? 'outsourcing' : 'regular';
+    if (orderType !== listType) return false;
+
     // Search by contractCode or materialCode
     const matchesSearch = o.contractCode.toLowerCase().includes(search.toLowerCase()) || 
                           o.materialCode.toLowerCase().includes(search.toLowerCase());
@@ -227,6 +231,7 @@ export default function OrderList() {
           contractCode: String(contractCode).trim(),
           materialCode: String(materialCode).trim(),
           deliveryDate: deliveryDate || (existingOrder?.deliveryDate || ''),
+          type: listType,
           plannedQuantity: isNaN(plannedQuantity) ? 0 : plannedQuantity,
           actualQuantity: parseInt(String(getVal(['thực hiện', 'thực tế', 'actual quantity', 'thuc hien'])).replace(/,/g, ''), 10) || 0,
           cutAllowed: parseInt(String(getVal(['đạt cho cắt', 'cắt', 'cut allowed', 'dat cho cat'])).replace(/,/g, ''), 10) || 0,
@@ -277,7 +282,9 @@ export default function OrderList() {
     <div className="space-y-6 flex-1 flex flex-col h-full overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 shrink-0">
         <div>
-          <h2 className="text-3xl font-playfair font-medium text-slate-900 tracking-tight">Tiến độ sản xuất</h2>
+          <h2 className="text-3xl font-playfair font-medium text-slate-900 tracking-tight">
+            {listType === 'outsourcing' ? 'Tiến độ Gia công' : 'Tiến độ sản xuất'}
+          </h2>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-white border border-slate-200 rounded-md text-sm font-medium shadow-sm hover:bg-slate-50 relative group transition-colors text-slate-700 flex items-center justify-center gap-2" onClick={() => exportOrdersToExcel(filteredOrders, `tien-do-${new Date().getTime()}.xlsx`)}>
@@ -310,7 +317,7 @@ export default function OrderList() {
           )}
 
           {canCreate && (
-            <button className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors" onClick={() => navigate('/orders/new')}>
+            <button className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors" onClick={() => navigate(listType === 'outsourcing' ? '/outsourcing/new' : '/orders/new')}>
               <Plus size={16} /> Thêm mới
             </button>
           )}
@@ -400,6 +407,12 @@ export default function OrderList() {
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Mã hợp đồng</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Mã số vật tư</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Ngày giao</th>
+                {listType === 'outsourcing' && (
+                  <>
+                    <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Ngày giao Gia công</th>
+                    <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Ngày nhận Gia công</th>
+                  </>
+                )}
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Trạng thái</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200 text-right">Kế hoạch</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200 text-right">Thực hiện</th>
@@ -435,7 +448,7 @@ export default function OrderList() {
                     <td className="py-3 px-4 text-sm text-slate-500">{idx + 1}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">
-                        <Link to={`/orders/${order.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-slate-200 text-slate-500 transition-colors" title="Sửa">
+                        <Link to={listType === 'outsourcing' ? `/outsourcing/${order.id}` : `/orders/${order.id}`} className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-slate-200 text-slate-500 transition-colors" title="Sửa">
                           <Edit size={16} />
                         </Link>
                         {canCreate && (
@@ -459,6 +472,16 @@ export default function OrderList() {
                     <td className={`py-3 px-4 text-sm ${dateColorClass}`}>
                       {order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('vi-VN') : '-'}
                     </td>
+                    {listType === 'outsourcing' && (
+                      <>
+                        <td className="py-3 px-4 text-sm text-slate-700">
+                          {order.outsourcingDeliveryDate ? new Date(order.outsourcingDeliveryDate).toLocaleDateString('vi-VN') : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-slate-700">
+                          {order.outsourcingReceiveDate ? new Date(order.outsourcingReceiveDate).toLocaleDateString('vi-VN') : '-'}
+                        </td>
+                      </>
+                    )}
                     <td className="py-3 px-4">
                       <Badge variant={getStatusColor(status)}>{status}</Badge>
                     </td>

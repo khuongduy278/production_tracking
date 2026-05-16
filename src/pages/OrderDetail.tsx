@@ -15,6 +15,9 @@ const INIT_ORDER: Omit<Order, 'id'> = {
   contractCode: '',
   materialCode: '',
   deliveryDate: '',
+  outsourcingDeliveryDate: '',
+  outsourcingReceiveDate: '',
+  type: 'regular',
   plannedQuantity: 0,
   actualQuantity: 0,
   cutAllowed: 0,
@@ -30,13 +33,14 @@ const INIT_ORDER: Omit<Order, 'id'> = {
   createdAt: '',
 };
 
-export default function OrderDetail() {
+export default function OrderDetail({ detailType = 'regular' }: { detailType?: 'regular' | 'outsourcing' }) {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
   const { userData } = useAuth();
   
-  const [order, setOrder] = useState<Omit<Order, 'id'>>(INIT_ORDER);
+  const [order, setOrder] = useState<Omit<Order, 'id'>>({ ...INIT_ORDER, type: detailType });
+  const [originalOrder, setOriginalOrder] = useState<Omit<Order, 'id'> | null>(null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -48,7 +52,9 @@ export default function OrderDetail() {
         const docRef = doc(db, 'orders', id!);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setOrder(docSnap.data() as Omit<Order, 'id'>);
+          const data = docSnap.data() as Omit<Order, 'id'>;
+          setOrder(data);
+          setOriginalOrder(data);
         } else {
           setError('Không tìm thấy đơn hàng');
         }
@@ -98,7 +104,7 @@ export default function OrderDetail() {
           userName: userData?.fullName,
           timestamp: now
         });
-        navigate('/orders');
+        navigate(detailType === 'outsourcing' ? '/outsourcing' : '/orders');
       } else {
         const docRef = doc(db, 'orders', id!);
         // We only allow updating fields, creation fields stay same. Rules prevent updating createdAt.
@@ -106,15 +112,44 @@ export default function OrderDetail() {
         const { createdAt, contractCode, ...updatePayload } = updatedData as any;
         await updateDoc(docRef, updatePayload);
         
+        let detailsText = 'Cập nhật tiến độ';
+        if (originalOrder) {
+          const diffs = [];
+          if (order.cutAllowed !== originalOrder.cutAllowed) diffs.push(`Đạt cho cắt(${order.cutAllowed})`);
+          if (order.cutVertical !== originalOrder.cutVertical) diffs.push(`Cắt dọc(${order.cutVertical})`);
+          if (order.sewBorder !== originalOrder.sewBorder) diffs.push(`May biên(${order.sewBorder})`);
+          if (order.sewHorizontal !== originalOrder.sewHorizontal) diffs.push(`May ngang(${order.sewHorizontal})`);
+          if (order.inspect !== originalOrder.inspect) diffs.push(`Kiểm(${order.inspect})`);
+          if (order.pack !== originalOrder.pack) diffs.push(`Đóng gói(${order.pack})`);
+          if (order.actualQuantity !== originalOrder.actualQuantity) diffs.push(`Hoàn thành(${order.actualQuantity})`);
+          
+          if (diffs.length > 0) {
+            detailsText = `Cập nhật tiến độ: ${diffs.join(', ')}`;
+          } else {
+            // If details didn't change but maybe something else like delay reason did
+            const infoDiffs = [];
+            if (order.delayReason !== originalOrder.delayReason) infoDiffs.push(`Lý do trễ`);
+            if (order.notes !== originalOrder.notes) infoDiffs.push(`Ghi chú`);
+            if (order.materialCode !== originalOrder.materialCode) infoDiffs.push(`Vật tư`);
+            if (order.deliveryDate !== originalOrder.deliveryDate) infoDiffs.push(`Ngày giao`);
+            if (order.outsourcingDeliveryDate !== originalOrder.outsourcingDeliveryDate) infoDiffs.push(`Ngày giao Gia công`);
+            if (order.outsourcingReceiveDate !== originalOrder.outsourcingReceiveDate) infoDiffs.push(`Ngày nhận Gia công`);
+            if (order.plannedQuantity !== originalOrder.plannedQuantity) infoDiffs.push(`Kế hoạch`);
+            if (infoDiffs.length > 0) {
+               detailsText = `Cập nhật thông tin: ${infoDiffs.join(', ')}`;
+            }
+          }
+        }
+
         await addDoc(collection(db, 'logs'), {
           orderId: id,
           action: 'UPDATE',
-          details: `Cập nhật tiến độ: Cắt(${order.cutVertical}), Ngoại(${order.sewBorder}), Kiểm(${order.inspect}), Đóng(${order.pack})`,
+          details: detailsText,
           userId: userData?.id,
           userName: userData?.fullName,
           timestamp: now
         });
-        navigate('/orders');
+        navigate(detailType === 'outsourcing' ? '/outsourcing' : '/orders');
       }
     } catch (err: any) {
       if (err.message) {
@@ -145,7 +180,7 @@ export default function OrderDetail() {
         </button>
         <div>
           <h1 className="font-playfair text-3xl md:text-4xl font-medium text-slate-900 tracking-tight">
-            {isNew ? 'Thêm đơn hàng mới' : `Chi tiết đơn hàng: ${order.contractCode}`}
+            {isNew ? (detailType === 'outsourcing' ? 'Thêm gia công mới' : 'Thêm tiến độ mới') : `Chi tiết ${detailType === 'outsourcing' ? 'gia công' : 'tiến độ'}: ${order.contractCode}`}
           </h1>
           {!isNew && (
             <div className="mt-3">
@@ -188,6 +223,26 @@ export default function OrderDetail() {
                 onChange={handleChange}
                 disabled={!canEditCore}
               />
+              {detailType === 'outsourcing' && (
+                <>
+                  <Input
+                    label="Ngày giao Gia công"
+                    type="date"
+                    name="outsourcingDeliveryDate"
+                    value={order.outsourcingDeliveryDate || ''}
+                    onChange={handleChange}
+                    disabled={!canEditCore}
+                  />
+                  <Input
+                    label="Ngày nhận Gia công"
+                    type="date"
+                    name="outsourcingReceiveDate"
+                    value={order.outsourcingReceiveDate || ''}
+                    onChange={handleChange}
+                    disabled={!canEditCore}
+                  />
+                </>
+              )}
               <Input
                 label="Số lượng kế hoạch"
                 type="number"

@@ -13,6 +13,9 @@ export interface Order {
   contractCode: string;
   materialCode: string;
   deliveryDate: string; // YYYY-MM-DD
+  outsourcingDeliveryDate?: string; // YYYY-MM-DD
+  outsourcingReceiveDate?: string; // YYYY-MM-DD
+  type?: 'regular' | 'outsourcing';
   plannedQuantity: number;
   actualQuantity: number; // For tracking real numbers
   cutAllowed: number;

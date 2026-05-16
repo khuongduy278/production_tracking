@@ -5,6 +5,8 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import OrderList from './pages/OrderList';
 import OrderDetail from './pages/OrderDetail';
+import OutsourcingList from './pages/OutsourcingList';
+import OutsourcingDetail from './pages/OutsourcingDetail';
 import LogsPage from './pages/LogsPage';
 import WelcomePage from './pages/WelcomePage';
 
@@ -25,6 +27,8 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<OrderList />} />
         <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="outsourcing" element={<OutsourcingList />} />
+        <Route path="outsourcing/:id" element={<OutsourcingDetail />} />
         <Route path="logs" element={<LogsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

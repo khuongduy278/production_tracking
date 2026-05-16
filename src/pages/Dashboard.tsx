@@ -3,11 +3,12 @@ import { collection, query, onSnapshot, orderBy, addDoc } from 'firebase/firesto
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/errorHandling';
 import { Order } from '../types';
-import { getOrderStatus } from '../lib/orderUtils';
+import { getOrderStatus, getStatusColor } from '../lib/orderUtils';
 import { Package, AlertCircle, Clock, CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -166,6 +167,7 @@ export default function Dashboard() {
                 <th className="py-4 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider">Mặt hàng</th>
                 <th className="py-4 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Tiến Độ Cuối</th>
                 <th className="py-4 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-right">Ngày Giao Hàng</th>
+                <th className="py-4 px-6 text-[11px] font-black text-slate-400 uppercase tracking-wider text-center">Trạng Thái</th>
                 <th className="py-4 px-8 relative w-20"><span className="sr-only">Thao tác</span></th>
               </tr>
             </thead>
@@ -202,6 +204,9 @@ export default function Dashboard() {
                       </td>
                       <td className="py-4 px-6 text-right">
                         <span className="text-sm font-medium text-slate-600">{new Date(order.deliveryDate).toLocaleDateString('vi-VN')}</span>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <Badge variant={getStatusColor(getOrderStatus(order))}>{getOrderStatus(order)}</Badge>
                       </td>
                       <td className="py-4 px-8 text-right">
                         <Link to={`/orders/${order.id}`} className="inline-block px-4 py-2 text-[10px] font-bold bg-white border border-slate-200 text-slate-700 rounded-lg shadow-sm hover:bg-slate-50 transition-colors uppercase tracking-widest text-center">
