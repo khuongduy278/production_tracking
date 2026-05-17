@@ -17,6 +17,8 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters
@@ -144,6 +146,7 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
               try {
                 await deleteDoc(doc(db, 'orders', id));
                 toast.success(`Đã xóa đơn hàng ${contractCode}`);
+                setSelectedIds(prev => prev.filter(x => x !== id));
               } catch (err) {
                 toast.error('Có lỗi xảy ra khi xóa đơn hàng');
                 handleFirestoreError(err, OperationType.DELETE, 'orders');
@@ -156,6 +159,85 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
         </div>
       </div>
     ), { duration: Infinity });
+  };
+
+  const handleBulkDelete = () => {
+    if (!canCreate || selectedIds.length === 0) return;
+    
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-slate-900">
+          Chắc chắn xóa {selectedIds.length} mục đã chọn?
+        </p>
+        <p className="text-xs text-slate-500">
+          Hành động này không thể hoàn tác.
+        </p>
+        <div className="flex gap-2 justify-end mt-2">
+          <button 
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+          >
+            Hủy
+          </button>
+          <button 
+            onClick={async () => {
+              toast.dismiss(t.id);
+              setIsDeletingBulk(true);
+              try {
+                const chunks = [];
+                let currentBatch = writeBatch(db);
+                let currentBatchCount = 0;
+
+                selectedIds.forEach((id) => {
+                  currentBatch.delete(doc(db, 'orders', id));
+                  currentBatchCount++;
+                  if (currentBatchCount === 499) {
+                    chunks.push(currentBatch);
+                    currentBatch = writeBatch(db);
+                    currentBatchCount = 0;
+                  }
+                });
+                
+                if (currentBatchCount > 0) {
+                  chunks.push(currentBatch);
+                }
+
+                for (const batchChunk of chunks) {
+                  await batchChunk.commit();
+                }
+
+                toast.success(`Đã xóa ${selectedIds.length} đơn hàng.`);
+                setSelectedIds([]);
+              } catch (err) {
+                toast.error('Có lỗi xảy ra khi xóa nhiều đơn hàng');
+                handleFirestoreError(err, OperationType.DELETE, 'orders');
+              } finally {
+                setIsDeletingBulk(false);
+              }
+            }}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+          >
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, id: 'bulk-delete-toast' });
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredOrders.map(o => o.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(x => x !== id));
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -339,9 +421,20 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           )}
 
           {canCreate && (
-            <button className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors" onClick={() => navigate(listType === 'outsourcing' ? '/outsourcing/new' : '/orders/new')}>
-              <Plus size={16} /> Thêm mới
-            </button>
+            <div className="flex gap-3">
+              {selectedIds.length > 0 && (
+                <button 
+                  onClick={handleBulkDelete}
+                  disabled={isDeletingBulk}
+                  className="px-4 py-2 bg-red-50 text-red-600 rounded-md text-sm font-medium shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 border border-red-200 transition-colors"
+                >
+                  <Trash2 size={16} /> {isDeletingBulk ? 'Đang xóa...' : `Xóa ${selectedIds.length} mục`}
+                </button>
+              )}
+              <button className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium shadow-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors" onClick={() => navigate(listType === 'outsourcing' ? '/outsourcing/new' : '/orders/new')}>
+                <Plus size={16} /> Thêm mới
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -424,6 +517,14 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
               <tr>
+                <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">
+                  <input 
+                    type="checkbox" 
+                    className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    checked={selectedIds.length === filteredOrders.length && filteredOrders.length > 0} 
+                    onChange={handleSelectAll} 
+                  />
+                </th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">STT</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Thao tác</th>
                 <th className="py-3 px-4 text-xs font-medium text-slate-500 border-b border-slate-200">Mã hợp đồng</th>
@@ -452,7 +553,7 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
             <tbody className="divide-y divide-slate-100">
               {sortedAndFilteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={16} className="py-12 px-6 text-center text-slate-500">
+                  <td colSpan={listType === 'outsourcing' ? 19 : 17} className="py-12 px-6 text-center text-slate-500">
                     Không tìm thấy dữ liệu.
                   </td>
                 </tr>
@@ -467,6 +568,14 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
 
                 return (
                   <tr key={order.id} className={`hover:bg-slate-50 transition-colors ${isDone ? 'opacity-75' : ''}`}>
+                    <td className="py-3 px-4">
+                      <input 
+                        type="checkbox"
+                        className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        checked={selectedIds.includes(order.id)}
+                        onChange={(e) => handleSelect(order.id, e.target.checked)}
+                      />
+                    </td>
                     <td className="py-3 px-4 text-sm text-slate-500">{idx + 1}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">

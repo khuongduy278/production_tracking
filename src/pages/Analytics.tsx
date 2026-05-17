@@ -117,7 +117,10 @@ export default function Analytics() {
     let inspectSum = 0;
     let packSum = 0;
 
-    const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const existingOrderIds = new Set(orders.map(o => o.id));
+    const sortedLogs = [...logs]
+      .filter(log => existingOrderIds.has(log.orderId))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     const orderStageState: Record<string, any> = {};
 
     sortedLogs.forEach(log => {

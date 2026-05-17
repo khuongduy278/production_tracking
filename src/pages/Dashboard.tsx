@@ -97,8 +97,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div>
-          <h2 className="text-3xl font-serif italic text-slate-900">Dashboard theo dõi đơn hàng Phân xưởng May TPHCM</h2>
+        <div className="min-w-0">
+          <h2 
+            className="text-2xl md:text-3xl font-bold text-red-600 truncate" 
+            title="Theo dõi đơn hàng Phân xưởng May TPHCM"
+          >
+            Theo dõi đơn hàng Phân xưởng May TPHCM
+          </h2>
           <p className="text-slate-500 font-medium mt-1">Hôm nay, {new Date().toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
         <div className="flex gap-4">

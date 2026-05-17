@@ -145,7 +145,7 @@ service cloud.firestore {
         && isValidLog(incoming());
         
       allow update: if false; // Logs are immutable
-      allow delete: if false; // Logs are immutable
+      allow delete: if isAdmin() || isPlan() || isManager();
     }
   }
 }
