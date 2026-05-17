@@ -323,7 +323,7 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
                  onChange={handleFileUpload}
                />
                <button 
-                 onClick={downloadExcelTemplate}
+                 onClick={() => downloadExcelTemplate(listType)}
                  className="px-4 py-2 bg-white border border-slate-200 rounded-md text-sm font-medium shadow-sm hover:bg-slate-50 relative group transition-colors text-slate-700 flex items-center justify-center gap-2"
                >
                  <FileDown size={16} /> Tải mẫu Excel
