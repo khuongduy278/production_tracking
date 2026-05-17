@@ -99,7 +99,7 @@ export default function OrderDetail({ detailType = 'regular' }: { detailType?: '
         await addDoc(collection(db, 'logs'), {
           orderId: newDoc.id,
           action: 'CREATE',
-          details: `Tạo mới đơn hàng ${order.contractCode}`,
+          details: `Tạo mới đơn hàng ${order.contractCode} (Vật tư: ${order.materialCode})`,
           userId: userData?.id,
           userName: userData?.fullName,
           timestamp: now
@@ -112,7 +112,9 @@ export default function OrderDetail({ detailType = 'regular' }: { detailType?: '
         const { createdAt, contractCode, ...updatePayload } = updatedData as any;
         await updateDoc(docRef, updatePayload);
         
-        let detailsText = 'Cập nhật tiến độ';
+        const contextInfo = `HĐ: ${originalOrder?.contractCode || order.contractCode} | VT: ${originalOrder?.materialCode || order.materialCode}`;
+        let detailsText = `Cập nhật đơn hàng - ${contextInfo}`;
+        
         if (originalOrder) {
           const diffs = [];
           if (order.cutAllowed !== originalOrder.cutAllowed) diffs.push(`Đạt cho cắt(${order.cutAllowed})`);
@@ -124,7 +126,7 @@ export default function OrderDetail({ detailType = 'regular' }: { detailType?: '
           if (order.actualQuantity !== originalOrder.actualQuantity) diffs.push(`Hoàn thành(${order.actualQuantity})`);
           
           if (diffs.length > 0) {
-            detailsText = `Cập nhật tiến độ: ${diffs.join(', ')}`;
+            detailsText = `Cập nhật tiến độ [${contextInfo}]: ${diffs.join(', ')}`;
           } else {
             // If details didn't change but maybe something else like delay reason did
             const infoDiffs = [];
@@ -136,7 +138,7 @@ export default function OrderDetail({ detailType = 'regular' }: { detailType?: '
             if (order.outsourcingReceiveDate !== originalOrder.outsourcingReceiveDate) infoDiffs.push(`Ngày nhận Gia công`);
             if (order.plannedQuantity !== originalOrder.plannedQuantity) infoDiffs.push(`Kế hoạch`);
             if (infoDiffs.length > 0) {
-               detailsText = `Cập nhật thông tin: ${infoDiffs.join(', ')}`;
+               detailsText = `Cập nhật thông tin [${contextInfo}]: ${infoDiffs.join(', ')}`;
             }
           }
         }

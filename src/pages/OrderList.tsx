@@ -286,11 +286,6 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           continue; // Skip invalid rows
         }
 
-        const existingOrder = orders.find(o => 
-          String(o.contractCode).toLowerCase().trim() === String(contractCode).toLowerCase().trim() && 
-          String(o.materialCode).toLowerCase().trim() === String(materialCode).toLowerCase().trim()
-        );
-
         let outsourcingDeliveryDate = getVal(['ngày giao gc', 'ngay giao gc', 'ngày giao gia công', 'ngay giao gia cong']);
         let outsourcingReceiveDate = getVal(['ngày nhận gc', 'ngay nhan gc', 'ngày nhận gia công', 'ngay nhan gia cong']);
         
@@ -328,14 +323,14 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
             }
         }
 
-        const newOrderRef = existingOrder ? doc(db, 'orders', existingOrder.id) : doc(collection(db, 'orders'));
+        const newOrderRef = doc(collection(db, 'orders'));
         const orderData = {
           contractCode: String(contractCode).trim(),
           materialCode: String(materialCode).trim(),
-          deliveryDate: deliveryDate || (existingOrder?.deliveryDate || ''),
+          deliveryDate: deliveryDate || '',
           type: listType,
-          outsourcingDeliveryDate: outsourcingDeliveryDate || existingOrder?.outsourcingDeliveryDate || '',
-          outsourcingReceiveDate: outsourcingReceiveDate || existingOrder?.outsourcingReceiveDate || '',
+          outsourcingDeliveryDate: outsourcingDeliveryDate || '',
+          outsourcingReceiveDate: outsourcingReceiveDate || '',
           plannedQuantity: isNaN(plannedQuantity) ? 0 : plannedQuantity,
           actualQuantity: parseInt(String(getVal(['thực hiện', 'thực tế', 'actual quantity', 'thuc hien'])).replace(/,/g, ''), 10) || 0,
           cutAllowed: parseInt(String(getVal(['đạt cho cắt', 'cắt', 'cut allowed', 'dat cho cat'])).replace(/,/g, ''), 10) || 0,
@@ -345,10 +340,10 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           inspect: parseInt(String(getVal(['kiểm', 'kiểm tra', 'kiem', 'inspect'])).replace(/,/g, ''), 10) || 0,
           pack: parseInt(String(getVal(['đóng gói', 'đóng', 'pack', 'dong goi'])).replace(/,/g, ''), 10) || 0,
           delayReason: getVal(['lý do trễ', 'lý do', 'delay reason', 'ly do tre']) === '0' ? '' : String(getVal(['lý do trễ', 'lý do', 'delay reason', 'ly do tre'])),
-          notes: existingOrder ? existingOrder.notes : '',
+          notes: '',
           updatedBy: userData?.fullName || 'Import Excel',
           updatedAt: new Date().toISOString(),
-          ...(existingOrder ? {} : { createdAt: new Date().toISOString() })
+          createdAt: new Date().toISOString()
         };
 
         batch.set(newOrderRef, orderData, { merge: true });
