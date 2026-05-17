@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ListTodo, FileDown, UserPlus, X, Copy, LogOut } from 'lucide-react';
+import { LayoutDashboard, ListTodo, FileDown, UserPlus, X, Copy, LogOut, PieChart } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { PhongPhuLogo } from './PhongPhuLogo';
 
@@ -34,6 +34,7 @@ export default function Layout() {
 
   const navItems = [
     { name: 'Tổng quan', path: '/', icon: LayoutDashboard },
+    { name: 'Báo cáo', path: '/analytics', icon: PieChart },
     { name: 'Tiến độ', path: '/orders', icon: ListTodo },
     { name: 'Gia công', path: '/outsourcing', icon: ListTodo },
     { name: 'Lịch sử', path: '/logs', icon: FileDown },

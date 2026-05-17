@@ -174,7 +174,7 @@ export default function Dashboard() {
             <tbody className="divide-y divide-slate-100">
               {topUrgentOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 px-8 text-center text-slate-500 font-medium">Không có đơn hàng gấp hoặc trễ.</td>
+                  <td colSpan={6} className="py-12 px-8 text-center text-slate-500 font-medium">Không có đơn hàng gấp hoặc trễ.</td>
                 </tr>
               ) : (
                 topUrgentOrders.map(order => {
