@@ -209,6 +209,26 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           String(o.materialCode).toLowerCase().trim() === String(materialCode).toLowerCase().trim()
         );
 
+        let outsourcingDeliveryDate = getVal(['ngày giao gc', 'ngay giao gc', 'ngày giao gia công', 'ngay giao gia cong']);
+        let outsourcingReceiveDate = getVal(['ngày nhận gc', 'ngay nhan gc', 'ngày nhận gia công', 'ngay nhan gia cong']);
+        
+        const formatDate = (val: any) => {
+          if (!val) return '';
+          if (typeof val === 'number') {
+            return new Date((val - (25567 + 2)) * 86400 * 1000).toISOString().split('T')[0];
+          } else if (typeof val === 'string' && val.includes('/')) {
+             const parts = val.split('/');
+             if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          } else if (typeof val === 'string' && val.includes('-')) {
+             const parts = val.split('-');
+             if (parts.length === 3 && parts[0].length === 2) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+          return typeof val === 'string' ? val : '';
+        };
+
+        if (outsourcingDeliveryDate) outsourcingDeliveryDate = formatDate(outsourcingDeliveryDate);
+        if (outsourcingReceiveDate) outsourcingReceiveDate = formatDate(outsourcingReceiveDate);
+
         // Convert Excel date serial number to string if necessary
         if (typeof deliveryDate === 'number') {
           const date = new Date((deliveryDate - (25567 + 2)) * 86400 * 1000); // Excel date to JS date
@@ -232,6 +252,8 @@ export default function OrderList({ listType = 'regular' }: { listType?: 'regula
           materialCode: String(materialCode).trim(),
           deliveryDate: deliveryDate || (existingOrder?.deliveryDate || ''),
           type: listType,
+          outsourcingDeliveryDate: outsourcingDeliveryDate || existingOrder?.outsourcingDeliveryDate || '',
+          outsourcingReceiveDate: outsourcingReceiveDate || existingOrder?.outsourcingReceiveDate || '',
           plannedQuantity: isNaN(plannedQuantity) ? 0 : plannedQuantity,
           actualQuantity: parseInt(String(getVal(['thực hiện', 'thực tế', 'actual quantity', 'thuc hien'])).replace(/,/g, ''), 10) || 0,
           cutAllowed: parseInt(String(getVal(['đạt cho cắt', 'cắt', 'cut allowed', 'dat cho cat'])).replace(/,/g, ''), 10) || 0,
